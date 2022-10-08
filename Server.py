@@ -2,11 +2,32 @@
 
 
 import socket
+import threading
 
-# 로컬호스트 서버 주소
+# 로컬호스트 서버 주소 -> 유니티에서 연결할 호스트와 동일
 host = "127.0.0.1"
-# 포트 주소
+# 포트 주소 -> 유니티에서 연결할 포트와 동일
 port = 65432
+
+CONNs = []
+ADDRs = []
+
+def recv(conn, addr):
+    with conn:
+        print(f"Connected by {addr}")
+        while True:
+            data = conn.recv(1024)
+            if not data:
+                break
+            conn.sendall(data)
+            SendBroadCast(data)
+            print(data)
+
+def SendBroadCast(_data):
+    for _conn in CONNs:
+        _conn.sendall(_data)
+
+
 
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -15,15 +36,18 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
 
     while True:
         conn, addr = s.accept()
-        with conn:
-            print(f"Connected by {addr}")
-            while True:
-                data = conn.recv(1024)
-                if not data:
-                    break
-                conn.sendall(data)
-                print(data)
 
+        # 클라이언트 접속자 저장
+        CONNs.append(conn)
+        ADDRs.append(addr)
+
+        # 다중 연결 스레드 구현
+        t = threading.Thread(target=recv, args=(conn, addr))
+        t.start()
+
+
+
+       
 # # TCP/IP 소켓을 생성하고
 # sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     
