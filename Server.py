@@ -22,6 +22,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 if not data:
                     break
                 conn.sendall(data)
+                print(data)
 
 # # TCP/IP 소켓을 생성하고
 # sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
