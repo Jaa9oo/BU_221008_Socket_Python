@@ -3,6 +3,10 @@
 
 import socket
 import threading
+import cv2
+from matplotlib import pyplot as plt
+
+# import io
 
 # 로컬호스트 서버 주소 -> 유니티에서 연결할 호스트와 동일
 host = "127.0.0.1"
@@ -19,13 +23,26 @@ def recv(conn, addr):
             data = conn.recv(1024)
             if not data:
                 break
-            conn.sendall(data)
-            SendBroadCast(data)
-            print(data)
+
+            if("LoadImg" in (data.decode('utf-8'))) :
+                send = "LoadImgOk"
+                conn.sendall(send.encode('utf-8'))
+            else :
+                conn.sendall(data)
+                SendBroadCast(data)
+                print(data)
+
 
 def SendBroadCast(_data):
     for _conn in CONNs:
         _conn.sendall(_data)
+
+def ImgShow(_data):
+    img_gray = cv2.imread(_data,0) #cv2.IMREAD_GRAYSCALE
+    img_color = cv2.imread(_data,1) #cv2.IMREAD_COLOR
+    cv2.imshow('gray', img_gray)
+    cv2.imshow('color', img_color)
+    cv2.waitKey(0) 
 
 
 
@@ -47,7 +64,6 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
 
 
 
-       
 # # TCP/IP 소켓을 생성하고
 # sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     
