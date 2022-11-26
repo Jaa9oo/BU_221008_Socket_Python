@@ -5,7 +5,7 @@ import socket
 import threading
 import cv2
 from matplotlib import pyplot as plt
-
+import numpy as np
 # import io
 
 # 로컬호스트 서버 주소 -> 유니티에서 연결할 호스트와 동일
@@ -16,21 +16,61 @@ port = 65432
 CONNs = []
 ADDRs = []
 
+isImgDown = False
+imgSize = 1024
+
 def recv(conn, addr):
+    global isImgDown
+    global imgSize
     with conn:
         print(f"Connected by {addr}")
         while True:
-            data = conn.recv(1024)
+            data = conn.recv(imgSize)
+            # print(data)
+
             if not data:
                 break
 
-            if("LoadImg" in (data.decode('utf-8'))) :
-                send = "LoadImgOk"
-                conn.sendall(send.encode('utf-8'))
+            # 이미지 수신 모드일경우
+            if (isImgDown) :
+                # 수신 데이터 변환
+                encoded_img = np.frombuffer(data, dtype = np.uint8)
+                # print(encoded_img)
+                
+                # 변환된 데이터 이미지 변환
+                img = cv2.imdecode(encoded_img, cv2.IMREAD_COLOR)
+                # img_Color = cv2.imread(img, 1)
+
+                # 이미지 출력
+                cv2.imshow('color', img)
+                cv2.waitKey(0) 
+
+                # 바이트 크기 일반 메세지 전송 크기로 수정
+                imgsize = 1024
+
+                # 이미지 수신 모드 해제
+                isImgDown = False
             else :
-                conn.sendall(data)
-                SendBroadCast(data)
-                print(data)
+                # 데이터 디코드
+                result = data.decode('utf-8')
+                
+                # 이미지 수신 명령 여부 확인
+                if("LoadImg" in result) :
+                    # 송신부에 이미지 수신 준비 완료 전송
+                    send = "LoadImgOk"
+                    conn.sendall(send.encode('utf-8'))
+                    
+                    # 이미지 수신 모드 설정
+                    isImgDown = True
+
+                    # 수신 데이터에서 전송될 이미지 크기 확인하여 바이트 크기 설정
+                    imgcnt = result.split('_')
+                    imgSize = int(imgcnt[1])
+                else :
+                    conn.sendall(data)
+                    SendBroadCast(data)
+                    print(data)
+                    imgsize = 1024
 
 
 def SendBroadCast(_data):
